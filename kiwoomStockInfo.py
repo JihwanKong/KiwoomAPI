@@ -58,9 +58,12 @@ class KiwoomPriceInfo:
         self.code = IniRead(INISECT['Basic'], INIKEY['code'])
         self.startdate = None  # date type
         self.todaymode = int(IniRead(INISECT['Date'], INIKEY['mode']))
-        self.open, self.close = [], []
+        self.date, self.open = [], []
         self.high, self.low = [], []
-        self.date, self.volume = [], []
+        self.close, self.volume = [], []
+        self.memories = [self.date, self.open,
+                         self.high, self.low,
+                         self.close, self.volume]
         self.period = int(IniRead(INISECT['Date'], INIKEY['period']))
 
         #todaymode option boolean 형태로 변환
@@ -104,9 +107,9 @@ class KiwoomPriceInfo:
             elif earlistdate < enddate:
                 tempearl = earlistdate
                 while tempearl < enddate:
-                    self.date.pop(0), self.open.pop(0)
-                    self.close.pop(0), self.high.pop(0)
-                    self.low.pop(0), self.volume.pop(0)
+                    # 모든 memory에서 가장 앞 data 제거
+                    for listdata in self.memories:
+                        listdata.pop(0)
                     # list에서 string받고 date type으로 형변환
                     strearl = self.date[0]
                     tempearl = datetime.strptime(strearl, DATEFRM).date()
@@ -117,12 +120,10 @@ class KiwoomPriceInfo:
                 tempearl = startdate - (earlistdate - timedelta(days=1))
                 _daydelta = tempearl.days
 
-        self.infodict['date'] = self.date
-        self.infodict['open'] = self.open
-        self.infodict['high'] = self.high
-        self.infodict['low'] = self.low
-        self.infodict['close'] = self.close
-        self.infodict['volume'] = self.volume
+        columns = ['date', 'open', 'high', 'low', 'close', 'volume']
+
+        for i, col in enumerate(columns):
+            self.infodict[col] = self.memories[i]
 
         return self.infodict
 
@@ -160,13 +161,12 @@ class KiwoomPriceInfo:
             _volume = self.kiwoom.dynamicCall('GetCommData(QString, QString, int, QString)',
                                               trcode, rqname, idx, '거래량')
 
+            # 값을 받아올 떄 문자열은 strip()으로 공백 제거
+            # 상수 값은 string->constant 변경 후 절대 값 처리
+            alldata = [_date.strip(), abs(int(_open)), abs(int(_high)),
+                       abs(int(_low)), abs(int(_close)), abs(int(_volume))]
             # list의 가장 앞쪽에 data insert
-            # 값을 받아올 떄 stirp()으로 각 값의 공백 제거
-            self.date.insert(0, _date.strip())
-            self.open.insert(0, abs(int(_open)))
-            self.high.insert(0, abs(int(_high)))
-            self.low.insert(0, abs(int(_low)))
-            self.close.insert(0, abs(int(_close)))
-            self.volume.insert(0, abs(int(_volume)))
+            for i, data in enumerate(alldata):
+                self.memories[i].insert(0, data)
 
         self.event_loop.exit()
