@@ -122,7 +122,7 @@ class KiwoomPriceInfo:
         self.infodict['high'] = self.high
         self.infodict['low'] = self.low
         self.infodict['close'] = self.close
-        self.infodict['volme'] = self.volume
+        self.infodict['volume'] = self.volume
 
         return self.infodict
 

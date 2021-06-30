@@ -48,4 +48,4 @@ if __name__ == '__main__':
         os.makedirs(DATASAVEPATH_V2, exist_ok=True)
 
     filepath = savepath + filename
-    dfinfo.to_csv(filepath, mode='w')
+    dfinfo.to_csv(filepath, mode='w', index=False)
