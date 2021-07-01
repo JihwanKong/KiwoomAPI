@@ -1,0 +1,6 @@
+{
+  "0": "process Success!!",
+  "-100": "user information exchnage fail",
+  "-101": "server connection fail",
+  "-102": "version processing fail"
+}

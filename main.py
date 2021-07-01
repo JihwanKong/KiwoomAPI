@@ -1,15 +1,25 @@
 from kiwoomLogin import *
 from kiwoomStockInfo import *
 from utils import *
+from log import *
 import pandas as pd
 import os
+import logging
+
+#logging.basicConfig(level=LOGLEVEL)
+filename = os.path.basename(__file__)
+filename = os.path.splitext(filename)[0]
 
 
 class Login:
     def __init__(self):
-        print('Login Init...')
-
+        #logging.info('Login Init...')
+        #print('Login Init...')
+        #param setting
+        self.writeLog = WriteLog(filename, self.__class__.__name__)
         self.login = KiwoomLogin()
+        self.writeLog.info('Login start.')
+
         self.login.connect_to_server()  # connect to API Server
 
         # self.login.app.exec_()  # event loop 끝내지 않고 계속 유지
@@ -18,16 +28,23 @@ class Login:
 class StockInfo(Login):
     def __init__(self):
         super().__init__()
-        print('Get stock Information')
+        #logging.info('Get stock Information')
+        #print('Get stock Information')
 
-        self.basicinfo = KiwoombasicInfo()
-        self.priceinfo = KiwoomPriceInfo()
+        # param setting
+        self.writeLog = WriteLog(filename, self.__class__.__name__)
+        self.basicinfo = None
+        self.priceinfo = None
+
+        self.writeLog.info('getting stock information start.')
 
     def GetbasicInfo(self):
+        self.basicinfo = KiwoombasicInfo()
         infodict = self.basicinfo.getInfo()
         return infodict
 
     def GetPriceInfo(self):
+        self.priceinfo = KiwoomPriceInfo()
         infodict = self.priceinfo.getInfo()
         return infodict
 
@@ -36,16 +53,12 @@ if __name__ == '__main__':
     infocls = StockInfo()
     info = infocls.GetPriceInfo()
     dfinfo = pd.DataFrame(info)
-    code = IniRead(INISECT['Basic'], INIKEY['code'])
-    version = IniRead(INISECT['File'], INIKEY['ver'])
-    filename = code + '.csv'
+    code = IniCfgRead(INISECT['Basic'], INIKEY['code'])
 
-    if version == 'v1':
-        savepath = DATASAVEPATH_V1
-        os.makedirs(DATASAVEPATH_V1, exist_ok=True)
-    else:  # version: v2
-        savepath = DATASAVEPATH_V2
-        os.makedirs(DATASAVEPATH_V2, exist_ok=True)
+    filename = '{}.csv'.format(code)
 
-    filepath = savepath + filename
+    savepath = DATASAVEPATH
+    os.makedirs(DATASAVEPATH, exist_ok=True)
+
+    filepath = '{path}/{name}'.format(path=savepath, name=filename)
     dfinfo.to_csv(filepath, mode='w', index=False)

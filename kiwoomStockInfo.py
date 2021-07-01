@@ -2,18 +2,28 @@ from PyQt5.QAxContainer import *
 from PyQt5.QtCore import *
 from datetime import date, datetime, timedelta
 from utils import *
+from log import *
+import logging
+
+# logging.basicConfig(level=LOGLEVEL)
+filename = os.path.basename(__file__)
+filename = os.path.splitext(filename)[0]
 
 
 class KiwoombasicInfo:
     def __init__(self):
-        print('KiwoombasicInfo class init..')
+        logging.info('KiwoombasicInfo class init..')
+        #print('KiwoombasicInfo class init..')
 
         # param setting
         self.kiwoom = QAxWidget('KHOPENAPI.KHOpenAPICtrl.1')
+        self.writeLog = WriteLog(filename, self.__class__.__name__)
         self.name = None
         self.event_loop = None
         self.infodict = {}
-        self.code = IniRead(INISECT['Basic'], INIKEY['code'])
+        self.code = IniCfgRead(INISECT['Basic'], INIKEY['code'])
+
+        self.writeLog.info('KiwoombasicInfo class init..')
 
     def getInfo(self):
         code = self.code
@@ -22,12 +32,16 @@ class KiwoombasicInfo:
 
         self.infodict['name'] = self.name.strip()  # strip(): 문자열 공백 제거
 
+        self.writeLog.info('get information complete..')
+
         return self.infodict
 
     def event_slots(self):
+        self.writeLog.info('event open..')
         self.kiwoom.OnReceiveTrData.connect(self.recvTrData)
 
     def sendTrData(self, _code):
+        self.writeLog.info('send transaction data..')
         self.kiwoom.dynamicCall('SetInputValue(QString, QString)',
                                 '종목코드', _code)
         self.kiwoom.dynamicCall('CommRqData(QString, QString, int, QString)',
@@ -40,7 +54,7 @@ class KiwoombasicInfo:
 
     def recvTrData(self, scrNo, rqname, trcode, recName,
                    prevnext, dataLen, errCode, msg, splmMsg):
-
+        self.writeLog.info('receive transaction data..')
         self.name = self.kiwoom.dynamicCall('GetCommData(QString, QString, int, QString)',
                                             trcode, rqname, 0, '종목명')
 
@@ -49,35 +63,41 @@ class KiwoombasicInfo:
 
 class KiwoomPriceInfo:
     def __init__(self):
-        print('KiwoomPriceInfo class init..')
+        #logging.info('KiwoomPriceInfo class init..')
+        #print('KiwoomPriceInfo class init..')
 
         # param setting
         self.kiwoom = QAxWidget('KHOPENAPI.KHOpenAPICtrl.1')
+        self.writeLog = WriteLog(filename, self.__class__.__name__)
         self.event_loop = None
         self.infodict = {}
-        self.code = IniRead(INISECT['Basic'], INIKEY['code'])
+        self.code = IniCfgRead(INISECT['Basic'], INIKEY['code'])
         self.startdate = None  # date type
-        self.todaymode = int(IniRead(INISECT['Date'], INIKEY['mode']))
+        self.todaymode = int(IniCfgRead(INISECT['Date'], INIKEY['mode']))
         self.date, self.open = [], []
         self.high, self.low = [], []
         self.close, self.volume = [], []
         self.memories = [self.date, self.open,
                          self.high, self.low,
                          self.close, self.volume]
-        self.period = int(IniRead(INISECT['Date'], INIKEY['period']))
+        self.period = int(IniCfgRead(INISECT['Date'], INIKEY['period']))
+
+        self.writeLog.info('KiwoomPriceInfo class init..')
 
         #todaymode option boolean 형태로 변환
         #ini file read 시 string 형태로 갖고옴
         self.todaymode = bool(self.todaymode)
 
+        self.writeLog.info('todaymode: {}'.format(str(self.todaymode)))
+
         if self.todaymode is True:
             # date type
             self.startdate = date.today()
         else:
-            startdate = IniRead(INISECT['Date'], INIKEY['start'])
+            startdate = IniCfgRead(INISECT['Date'], INIKEY['start'])
             # date으로 형변환
             # strptime datetime.datetime(class) return
-            self.startdate = datetime.strptime(startdate, DATEFRM).date()
+            self.startdate = datetime.strptime(startdate, DATEFMT).date()
 
     def getInfo(self):
         period = self.period - 1  # today 포함이므로 priod보다 하나 작은 수 뺌
@@ -91,7 +111,7 @@ class KiwoomPriceInfo:
         while True:
             _date = startdate - timedelta(days=_daydelta)
 
-            date_str = _date.strftime(DATEFRM)
+            date_str = _date.strftime(DATEFMT)
 
             #send / recv에 문제있어 50msec sleep
             msecSleep(50)
@@ -99,7 +119,7 @@ class KiwoomPriceInfo:
 
             # list에서 string 받은 후 date type으로 형변환
             earlistdate = self.date[0]
-            earlistdate = datetime.strptime(earlistdate, DATEFRM).date()
+            earlistdate = datetime.strptime(earlistdate, DATEFMT).date()
 
             # list 날짜에 period에 포함되지 않는 날짜(앞선날짜) 제거
             if earlistdate == enddate:
@@ -112,7 +132,7 @@ class KiwoomPriceInfo:
                         listdata.pop(0)
                     # list에서 string받고 date type으로 형변환
                     strearl = self.date[0]
-                    tempearl = datetime.strptime(strearl, DATEFRM).date()
+                    tempearl = datetime.strptime(strearl, DATEFMT).date()
                 break
             else:
                 '''earlist date 보다 하루전 data 
@@ -125,12 +145,16 @@ class KiwoomPriceInfo:
         for i, col in enumerate(columns):
             self.infodict[col] = self.memories[i]
 
+        self.writeLog.info('get information complete..')
+
         return self.infodict
 
     def event_slots(self):
+        self.writeLog.info('event open..')
         self.kiwoom.OnReceiveTrData.connect(self.recvTrData)
 
     def sendTrData(self, _code, _date):
+        self.writeLog.info('send transaction data..')
         self.kiwoom.dynamicCall('SetInputValue(QString, QString)',
                                 '종목코드', _code)
         self.kiwoom.dynamicCall('SetInputValue(QString, QString)',
@@ -147,6 +171,7 @@ class KiwoomPriceInfo:
 
     def recvTrData(self, scrNo, rqname, trcode, recName,
                    prevnext, dataLen, errCode, msg, splmMsg):
+        self.writeLog.info('receive transaction data..')
         for idx in range(NUMRECVPRICEDATA):
             _date = self.kiwoom.dynamicCall('GetCommData(QString, QString, int, QString)',
                                             trcode, rqname, idx, '날짜')
