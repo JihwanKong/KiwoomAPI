@@ -53,7 +53,7 @@ class KiwoomLogin:
 
     def _handler_login(self, nErrCode):
         if nErrCode == 0:
-            self.writeLog.info(code=nErrCode)
+            self.writeLog.info(code=nErrCode, addmsg='Login Success!!')
         else:
             self.writeLog.error(code=nErrCode)
             #print('process Success!!')

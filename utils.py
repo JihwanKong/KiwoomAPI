@@ -35,8 +35,6 @@ def getjsonData(filename):
     with open(filename, 'r') as f:
         jsondata = json.load(f)
     return jsondata
-
-
 ##########################function##########################
 
 

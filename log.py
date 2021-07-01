@@ -10,11 +10,17 @@ class WriteLog:
         self.filename = None
         self.loglevel = LOGLEVEL
         self.addmsgfmt = '({msg})'
+        self.logger = self.get_logger(mdlname, clsname)
+
+    def get_logger(self, mdlname=None, clsname=None):
+        logger = logging.getLogger('logger')
+        # 이전에 썼던 file handler 삭제 함 -> 로그 중복 방지
+        logger.handlers.clear()
 
         # 오늘 날짜 받은 후 str 전환
         today = date.today().strftime(DATEFMT)
         os.makedirs(LOGPATH, exist_ok=True)
-        #os.makedirs(LOGPATH)
+        # os.makedirs(LOGPATH)
         self.filename = '{path}/{name}.log'.format(path=LOGPATH, name=today)
 
         basefmt = '[%(asctime)s.%(msecs)03d][%(levelname)s]' \
@@ -36,135 +42,154 @@ class WriteLog:
 
         basefmt = basefmt.format(processfmt=processfmt)
 
-        logging.basicConfig(filename=self.filename,
-                            level=self.loglevel,
-                            format=basefmt,
-                            datefmt='%H:%M:%S')
+        '''
+        # 새로운 module에서 각각 다른 log format을 쓰려면
+        # Root logger 를 사용하면 안됨
+        self.logging.basicConfig(filename=self.filename,
+                                 level=self.loglevel,
+                                 format=basefmt,
+                                 datefmt='%H:%M:%S')
+        '''
+
+        '''
+        logger의 level 만 설정 할 시, handler의 level 동일
+        handler level 따로 설정 가능
+        '''
+        # logger log level 설정
+        logger.setLevel(self.loglevel)
+        # file 경로 설정 및 handler의 format 설정
+        file_handler = logging.FileHandler(self.filename)
+        formatter = logging.Formatter(basefmt, '%H:%M:%S')
+        file_handler.setFormatter(formatter)
+        # handler list에 추가
+        logger.addHandler(file_handler)
+
+        return logger
 
     def debug(self, msg=None, code=None, addmsg=None):
         if addmsg is None:
             if (msg is not None) and (code is not None):
-                logging.debug(msg)
-                logging.debug(ERRCODEDICT[code])
+                self.logger.debug(msg)
+                self.logger.debug(ERRCODEDICT[code])
             elif (msg is not None) and (code is None):
-                logging.debug(msg)
+                self.logger.debug(msg)
             elif (msg is None) and (code is not None):
-                logging.debug(ERRCODEDICT[code])
+                self.logger.debug(ERRCODEDICT[code])
             else:  # msg: None, code: None
-                logging.warning('No message...assign message or code!')
+                self.logger.warning('No message...assign message or code!')
 
         else:  # addmsg is not None
             # 괄호 형태로 string 변경
             addmsg = self.addmsgfmt.format(msg=addmsg)
             if (msg is not None) and (code is not None):
-                logging.debug(msg + addmsg)
-                logging.debug(ERRCODEDICT[code] + addmsg)
+                self.logger.debug(msg + addmsg)
+                self.logger.debug(ERRCODEDICT[code] + addmsg)
             elif (msg is not None) and (code is None):
-                logging.debug(msg + addmsg)
+                self.logger.debug(msg + addmsg)
             elif (msg is None) and (code is not None):
-                logging.debug(ERRCODEDICT[code] + addmsg)
+                self.logger.debug(ERRCODEDICT[code] + addmsg)
             else:  # msg: None, code: None
-                logging.warning(addmsg + 'No message...assign message or code!')
+                self.logger.warning(addmsg + 'No message...assign message or code!')
 
     def info(self, msg=None, code=None, addmsg=None):
         if addmsg is None:
             if (msg is not None) and (code is not None):
-                logging.info(msg)
-                logging.info(ERRCODEDICT[code])
+                self.logger.info(msg)
+                self.logger.info(ERRCODEDICT[code])
             elif (msg is not None) and (code is None):
-                logging.info(msg)
+                self.logger.info(msg)
             elif (msg is None) and (code is not None):
-                logging.info(ERRCODEDICT[code])
+                self.logger.info(ERRCODEDICT[code])
             else:  # msg: None, code: None
-                logging.warning('No message...assign message or code!')
+                self.logger.warning('No message...assign message or code!')
 
         else:  # addmsg is not None
             # 괄호 형태로 string 변경
             addmsg = self.addmsgfmt.format(msg=addmsg)
             if (msg is not None) and (code is not None):
-                logging.info(msg + addmsg)
-                logging.info(ERRCODEDICT[code] + addmsg)
+                self.logger.info(msg + addmsg)
+                self.logger.info(ERRCODEDICT[code] + addmsg)
             elif (msg is not None) and (code is None):
-                logging.info(msg + addmsg)
+                self.logger.info(msg + addmsg)
             elif (msg is None) and (code is not None):
-                logging.info(ERRCODEDICT[code] + addmsg)
+                self.logger.info(ERRCODEDICT[code] + addmsg)
             else:  # msg: None, code: None
-                logging.warning(addmsg + 'No message...assign message or code!')
+                self.logger.warning(addmsg + 'No message...assign message or code!')
 
     def warning(self, msg=None, code=None, addmsg=None):
         if addmsg is None:
             if (msg is not None) and (code is not None):
-                logging.warning(msg)
-                logging.warning(ERRCODEDICT[code])
+                self.logger.warning(msg)
+                self.logger.warning(ERRCODEDICT[code])
             elif (msg is not None) and (code is None):
-                logging.warning(msg)
+                self.logger.warning(msg)
             elif (msg is None) and (code is not None):
-                logging.warning(ERRCODEDICT[code])
+                self.logger.warning(ERRCODEDICT[code])
             else:  # msg: None, code: None
-                logging.warning('No message...assign message or code!')
+                self.logger.warning('No message...assign message or code!')
 
         else:  # addmsg is not None
             # 괄호 형태로 string 변경
             addmsg = self.addmsgfmt.format(msg=addmsg)
             if (msg is not None) and (code is not None):
-                logging.warning(msg + addmsg)
-                logging.warning(ERRCODEDICT[code] + addmsg)
+                self.logger.warning(msg + addmsg)
+                self.logger.warning(ERRCODEDICT[code] + addmsg)
             elif (msg is not None) and (code is None):
-                logging.warning(msg + addmsg)
+                self.logger.warning(msg + addmsg)
             elif (msg is None) and (code is not None):
-                logging.warning(ERRCODEDICT[code] + addmsg)
+                self.logger.warning(ERRCODEDICT[code] + addmsg)
             else:  # msg: None, code: None
-                logging.warning(addmsg + 'No message...assign message or code!')
+                self.logger.warning(addmsg + 'No message...assign message or code!')
 
     def error(self, msg=None, code=None, addmsg=None):
         if addmsg is None:
             if (msg is not None) and (code is not None):
-                logging.error(msg)
-                logging.error(ERRCODEDICT[code])
+                self.logger.error(msg)
+                self.logger.error(ERRCODEDICT[code])
             elif (msg is not None) and (code is None):
-                logging.error(msg)
+                self.logger.error(msg)
             elif (msg is None) and (code is not None):
-                logging.error(ERRCODEDICT[code])
+                self.logger.error(ERRCODEDICT[code])
             else:  # msg: None, code: None
-                logging.warning('No message...assign message or code!')
+                self.logger.warning('No message...assign message or code!')
 
         else:  # addmsg is not None
             # 괄호 형태로 string 변경
             addmsg = self.addmsgfmt.format(msg=addmsg)
             if (msg is not None) and (code is not None):
-                logging.error(msg + addmsg)
-                logging.error(ERRCODEDICT[code] + addmsg)
+                self.logger.error(msg + addmsg)
+                self.logger.error(ERRCODEDICT[code] + addmsg)
             elif (msg is not None) and (code is None):
-                logging.error(msg + addmsg)
+                self.logger.error(msg + addmsg)
             elif (msg is None) and (code is not None):
-                logging.error(ERRCODEDICT[code] + addmsg)
+                self.logger.error(ERRCODEDICT[code] + addmsg)
             else:  # msg: None, code: None
-                logging.warning(addmsg + 'No message...assign message or code!')
+                self.logger.warning(addmsg + 'No message...assign message or code!')
 
     def critical(self, msg=None, code=None, addmsg=None):
         if addmsg is None:
             if (msg is not None) and (code is not None):
-                logging.critical(msg)
-                logging.critical(ERRCODEDICT[code])
+                self.logger.critical(msg)
+                self.logger.critical(ERRCODEDICT[code])
             elif (msg is not None) and (code is None):
-                logging.critical(msg)
+                self.logger.critical(msg)
             elif (msg is None) and (code is not None):
-                logging.critical(ERRCODEDICT[code])
+                self.logger.critical(ERRCODEDICT[code])
             else:  # msg: None, code: None
-                logging.warning('No message...assign message or code!')
+                self.logger.warning('No message...assign message or code!')
 
         else:  # addmsg is not None
             # 괄호 형태로 string 변경
             addmsg = self.addmsgfmt.format(msg=addmsg)
             if (msg is not None) and (code is not None):
-                logging.critical(msg + addmsg)
-                logging.critical(ERRCODEDICT[code] + addmsg)
+                self.logger.critical(msg + addmsg)
+                self.logger.critical(ERRCODEDICT[code] + addmsg)
             elif (msg is not None) and (code is None):
-                logging.critical(msg + addmsg)
+                self.logger.critical(msg + addmsg)
             elif (msg is None) and (code is not None):
-                logging.critical(ERRCODEDICT[code] + addmsg)
+                self.logger.critical(ERRCODEDICT[code] + addmsg)
             else:  # msg: None, code: None
-                logging.warning(addmsg + 'No message...assign message or code!')
+                self.logger.warning(addmsg + 'No message...assign message or code!')
 
 
 if __name__ == '__main__':
