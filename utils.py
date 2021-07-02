@@ -9,7 +9,7 @@ INIKEY = {
     # Basic info key
     'code': 'stockcode',
     # Date info key
-    'mode': 'todaymode', 'period': 'period', 'start': 'startdate',
+    'mode': 'todaymode', 'start': 'startdate', 'end': 'enddate',
     # File info key
     'traderpath': 'traderexecpath', 'ver': 'dataver',
     # Log info key
@@ -45,7 +45,7 @@ for k, v in dictdata.items():
     dictmdf[int(k)] = dictdata[k]
 ##########################dict key type change##########################
 
-ERRCODEDICT = dictmdf  # errorcode.json ÆÄÀÏÀÇ ³»¿ë ¹Ş¾Æ¿È
+ERRCODEDICT = dictmdf  # errorcode.json íŒŒì¼ì˜ ë‚´ìš© ë°›ì•„ì˜´
 DATASAVEPATH = '{execpath}/data/{vername}'.format(
     execpath=IniCfgRead(INISECT['File'], INIKEY['traderpath']),
     vername=IniCfgRead(INISECT['File'], INIKEY['ver'])

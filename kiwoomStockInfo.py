@@ -73,6 +73,7 @@ class KiwoomPriceInfo:
         self.infodict = {}
         self.code = IniCfgRead(INISECT['Basic'], INIKEY['code'])
         self.startdate = None  # date type
+        self.enddate = None    # date type
         self.todaymode = int(IniCfgRead(INISECT['Date'], INIKEY['mode']))
         self.date, self.open = [], []
         self.high, self.low = [], []
@@ -80,7 +81,6 @@ class KiwoomPriceInfo:
         self.memories = [self.date, self.open,
                          self.high, self.low,
                          self.close, self.volume]
-        self.period = int(IniCfgRead(INISECT['Date'], INIKEY['period']))
 
         self.writeLog.info('KiwoomPriceInfo class init..')
 
@@ -88,29 +88,31 @@ class KiwoomPriceInfo:
         #ini file read 시 string 형태로 갖고옴
         self.todaymode = bool(self.todaymode)
 
+        startdate = IniCfgRead(INISECT['Date'], INIKEY['start'])
+        # date으로 형변환
+        # strptime datetime.datetime(class) return
+        self.startdate = datetime.strptime(startdate, DATEFMT).date()
+
         self.writeLog.info('todaymode: {}'.format(str(self.todaymode)))
 
         if self.todaymode is True:
             # date type
-            self.startdate = date.today()
+            self.enddate = date.today()
         else:
-            startdate = IniCfgRead(INISECT['Date'], INIKEY['start'])
+            enddate = IniCfgRead(INISECT['Date'], INIKEY['end'])
             # date으로 형변환
             # strptime datetime.datetime(class) return
-            self.startdate = datetime.strptime(startdate, DATEFMT).date()
+            self.enddate = datetime.strptime(enddate, DATEFMT).date()
 
     def getInfo(self):
-        period = self.period - 1  # today 포함이므로 priod보다 하나 작은 수 뺌
         code = self.code
         startdate = self.startdate
-        enddate = startdate - timedelta(period)
+        enddate = self.enddate
 
         self.event_slots()
 
-        _daydelta = 0
+        _date = enddate
         while True:
-            _date = startdate - timedelta(days=_daydelta)
-
             date_str = _date.strftime(DATEFMT)
 
             #send / recv에 문제있어 50msec sleep
@@ -122,11 +124,11 @@ class KiwoomPriceInfo:
             earlistdate = datetime.strptime(earlistdate, DATEFMT).date()
 
             # list 날짜에 period에 포함되지 않는 날짜(앞선날짜) 제거
-            if earlistdate == enddate:
+            if earlistdate == startdate:
                 break
-            elif earlistdate < enddate:
+            elif earlistdate < startdate:
                 tempearl = earlistdate
-                while tempearl < enddate:
+                while tempearl < startdate:
                     # 모든 memory에서 가장 앞 data 제거
                     for listdata in self.memories:
                         listdata.pop(0)
@@ -135,10 +137,8 @@ class KiwoomPriceInfo:
                     tempearl = datetime.strptime(strearl, DATEFMT).date()
                 break
             else:
-                '''earlist date 보다 하루전 data 
-                부터 receive 할수도있도록 delta 값 조정'''
-                tempearl = startdate - (earlistdate - timedelta(days=1))
-                _daydelta = tempearl.days
+                # earlist date 보다 하루전 data 부터 receive
+                _date = earlistdate - timedelta(days=1)
 
         columns = ['date', 'open', 'high', 'low', 'close', 'volume']
 
@@ -154,7 +154,8 @@ class KiwoomPriceInfo:
         self.kiwoom.OnReceiveTrData.connect(self.recvTrData)
 
     def sendTrData(self, _code, _date):
-        self.writeLog.info('send transaction data..')
+        self.writeLog.info('send transaction data..',
+                           addmsg='code:{} / date:{}'.format(_code, _date))
         self.kiwoom.dynamicCall('SetInputValue(QString, QString)',
                                 '종목코드', _code)
         self.kiwoom.dynamicCall('SetInputValue(QString, QString)',
