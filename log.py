@@ -58,7 +58,7 @@ class WriteLog:
         # logger log level 설정
         logger.setLevel(self.loglevel)
         # file 경로 설정 및 handler의 format 설정
-        file_handler = logging.FileHandler(self.filename)
+        file_handler = logging.FileHandler(self.filename, encoding='utf-8')
         formatter = logging.Formatter(basefmt, '%H:%M:%S')
         file_handler.setFormatter(formatter)
         # handler list에 추가

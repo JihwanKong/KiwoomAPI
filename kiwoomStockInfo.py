@@ -2,8 +2,9 @@ from PyQt5.QAxContainer import *
 from PyQt5.QtCore import *
 from datetime import date, datetime, timedelta
 from utils import *
-from log import *
+from log import WriteLog
 import logging
+import os
 
 # logging.basicConfig(level=LOGLEVEL)
 filename = os.path.basename(__file__)

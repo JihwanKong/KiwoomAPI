@@ -2,10 +2,9 @@ from PyQt5.QAxContainer import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from utils import *
-from log import *
+from log import WriteLog
 import sys
 import os
-import logging
 
 # logging.basicConfig(level=LOGLEVEL)
 # log를 위한 file name 추출

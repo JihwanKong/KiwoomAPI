@@ -1,10 +1,9 @@
 from kiwoomLogin import *
 from kiwoomStockInfo import *
 from utils import *
-from log import *
+from log import WriteLog
 import pandas as pd
 import os
-import logging
 
 #logging.basicConfig(level=LOGLEVEL)
 filename = os.path.basename(__file__)
