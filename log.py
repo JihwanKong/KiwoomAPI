@@ -10,7 +10,12 @@ class WriteLog:
         self.filename = None
         self.loglevel = LOGLEVEL
         self.addmsgfmt = '({msg})'
-        self.logger = self.get_logger(mdlname, clsname)
+        '''날짜 바뀔 시, 바뀐날짜 파일에 logging 할 수 있도록
+        logger function call 때마다 갱신하는 방식으로 수정'''
+        #self.logger = self.get_logger(mdlname, clsname)
+        self.logger = None
+        self.mdlname = mdlname
+        self.clsname = clsname
 
     def get_logger(self, mdlname=None, clsname=None):
         logger = logging.getLogger('logger')
@@ -67,6 +72,7 @@ class WriteLog:
         return logger
 
     def debug(self, msg=None, code=None, addmsg=None):
+        self.logger = self.get_logger(self.mdlname, self.clsname)
         if addmsg is None:
             if (msg is not None) and (code is not None):
                 self.logger.debug(msg)
@@ -92,6 +98,7 @@ class WriteLog:
                 self.logger.warning(addmsg + 'No message...assign message or code!')
 
     def info(self, msg=None, code=None, addmsg=None):
+        self.logger = self.get_logger(self.mdlname, self.clsname)
         if addmsg is None:
             if (msg is not None) and (code is not None):
                 self.logger.info(msg)
@@ -117,6 +124,7 @@ class WriteLog:
                 self.logger.warning(addmsg + 'No message...assign message or code!')
 
     def warning(self, msg=None, code=None, addmsg=None):
+        self.logger = self.get_logger(self.mdlname, self.clsname)
         if addmsg is None:
             if (msg is not None) and (code is not None):
                 self.logger.warning(msg)
@@ -142,6 +150,7 @@ class WriteLog:
                 self.logger.warning(addmsg + 'No message...assign message or code!')
 
     def error(self, msg=None, code=None, addmsg=None):
+        self.logger = self.get_logger(self.mdlname, self.clsname)
         if addmsg is None:
             if (msg is not None) and (code is not None):
                 self.logger.error(msg)
@@ -167,6 +176,7 @@ class WriteLog:
                 self.logger.warning(addmsg + 'No message...assign message or code!')
 
     def critical(self, msg=None, code=None, addmsg=None):
+        self.logger = self.get_logger(self.mdlname, self.clsname)
         if addmsg is None:
             if (msg is not None) and (code is not None):
                 self.logger.critical(msg)

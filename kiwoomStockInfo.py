@@ -13,7 +13,7 @@ filename = os.path.splitext(filename)[0]
 
 class KiwoombasicInfo:
     def __init__(self):
-        logging.info('KiwoombasicInfo class init..')
+        #logging.info('KiwoombasicInfo class init..')
         #print('KiwoombasicInfo class init..')
 
         # param setting
