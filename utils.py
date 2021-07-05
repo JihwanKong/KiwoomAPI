@@ -31,21 +31,23 @@ def IniCfgRead(section, key):
     return parser[section][key]
 
 
-def getjsonData(filename):
+def getjsonData(filename, keytype='str'):
     with open(filename, 'r') as f:
         jsondata = json.load(f)
-    return jsondata
+
+    jsondict = {}
+    if keytype == 'str':
+        jsondict = jsondata
+    elif keytype == 'int':
+        for k, v in jsondata.items():
+            jsondict[int(k)] = v
+
+    return jsondict
 ##########################function##########################
 
 
-##########################dict key type change##########################
-dictdata = getjsonData('./config/errorcode.json')
-dictmdf = {}
-for k, v in dictdata.items():
-    dictmdf[int(k)] = dictdata[k]
-##########################dict key type change##########################
-
-ERRCODEDICT = dictmdf  # errorcode.json 파일의 내용 받아옴
+# errorcode.json 파일의 내용 받아옴
+ERRCODEDICT = getjsonData('./config/errorcode.json', keytype='int')
 DATASAVEPATH = '{execpath}/data/{vername}'.format(
     execpath=IniCfgRead(INISECT['File'], INIKEY['traderpath']),
     vername=IniCfgRead(INISECT['File'], INIKEY['ver'])
