@@ -15,7 +15,6 @@ INIKEY = {
     # Log info key
     'level': 'loglevel', 'path': 'logpath'
 }
-NUMRECVPRICEDATA = 20
 
 
 ##########################function##########################

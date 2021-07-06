@@ -1,6 +1,6 @@
 from PyQt5.QAxContainer import *
 from PyQt5.QtCore import *
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from utils import *
 from log import WriteLog
 import os
@@ -74,7 +74,9 @@ class KiwoomPriceInfo:
         self.code = IniCfgRead(INISECT['Basic'], INIKEY['code'])
         self.startdate = None  # date type
         self.enddate = None    # date type
-        self.todaymode = int(IniCfgRead(INISECT['Date'], INIKEY['mode']))
+        self.todaymode = bool(int(IniCfgRead(
+            INISECT['Date'], INIKEY['mode'])))
+        self.contdatamode = False
         self.date, self.open = [], []
         self.high, self.low = [], []
         self.close, self.volume = [], []
@@ -83,10 +85,6 @@ class KiwoomPriceInfo:
                          self.close, self.volume]
 
         self.writeLog.info('KiwoomPriceInfo class init..')
-
-        #todaymode option boolean 형태로 변환
-        #ini file read 시 string 형태로 갖고옴
-        self.todaymode = bool(self.todaymode)
 
         startdate = IniCfgRead(INISECT['Date'], INIKEY['start'])
         # date으로 형변환
@@ -111,34 +109,20 @@ class KiwoomPriceInfo:
 
         self.event_slots()
 
-        _date = enddate
-        while True:
-            date_str = _date.strftime(DATEFMT)
+        enddate_str = enddate.strftime(DATEFMT)
+        self.sendTrData(code, enddate_str)
+        earldate = datetime.strptime(self.date[0], DATEFMT).date()
 
-            #send / recv에 문제있어 50msec sleep
-            msecSleep(50)
-            self.sendTrData(code, date_str)
+        while (self.contdatamode is True) and (earldate > startdate):
+            msecSleep(50)  # send / recv에 문제있어 50msec sleep
+            # 처음 data send 후 end date 기준으로 연속 데이터 확인요청
+            self.sendTrData(code, enddate_str, _prevnext=2)
+            earldate = datetime.strptime(self.date[0], DATEFMT).date()
 
-            # list에서 string 받은 후 date type으로 형변환
-            earlistdate = self.date[0]
-            earlistdate = datetime.strptime(earlistdate, DATEFMT).date()
-
-            # list 날짜에 period에 포함되지 않는 날짜(앞선날짜) 제거
-            if earlistdate == startdate:
-                break
-            elif earlistdate < startdate:
-                tempearl = earlistdate
-                while tempearl < startdate:
-                    # 모든 memory에서 가장 앞 data 제거
-                    for listdata in self.memories:
-                        listdata.pop(0)
-                    # list에서 string받고 date type으로 형변환
-                    strearl = self.date[0]
-                    tempearl = datetime.strptime(strearl, DATEFMT).date()
-                break
-            else:
-                # earlist date 보다 하루전 data 부터 receive
-                _date = earlistdate - timedelta(days=1)
+        while earldate < startdate:
+            for listdata in self.memories:
+                listdata.pop(0)
+            earldate = datetime.strptime(self.date[0], DATEFMT).date()
 
         columns = ['date', 'open', 'high', 'low', 'close', 'volume']
 
@@ -153,9 +137,10 @@ class KiwoomPriceInfo:
         self.writeLog.info('event open..')
         self.kiwoom.OnReceiveTrData.connect(self.recvTrData)
 
-    def sendTrData(self, _code, _date):
+    def sendTrData(self, _code, _date, _prevnext=0):
         self.writeLog.info('send transaction data..',
-                           addmsg='code:{} / date:{}'.format(_code, _date))
+                           addmsg='code:{} / continuous data mode:{}'
+                           .format(_code, self.contdatamode))
         self.kiwoom.dynamicCall('SetInputValue(QString, QString)',
                                 '종목코드', _code)
         self.kiwoom.dynamicCall('SetInputValue(QString, QString)',
@@ -163,7 +148,7 @@ class KiwoomPriceInfo:
         self.kiwoom.dynamicCall('SetInputValue(QString, QString)',
                                 '표시구분', '0')
         self.kiwoom.dynamicCall('CommRqData(QString, QString, int, QString)',
-                                'rq_opt10086', 'opt10086', 0, '0101')
+                                'rq_opt10086', 'opt10086', _prevnext, '0101')
 
         # event loop 생성 후 receive data event 일어날 때까지 대기
         # event loop exit은 receive data event 에서 처리
@@ -173,7 +158,9 @@ class KiwoomPriceInfo:
     def recvTrData(self, scrNo, rqname, trcode, recName,
                    prevnext, dataLen, errCode, msg, splmMsg):
         self.writeLog.info('receive transaction data..')
-        for idx in range(NUMRECVPRICEDATA):
+        datarptcnt = self.kiwoom.dynamicCall(
+            'GetRepeatCnt(QString, QString)', trcode, rqname)
+        for idx in range(datarptcnt):
             _date = self.kiwoom.dynamicCall('GetCommData(QString, QString, int, QString)',
                                             trcode, rqname, idx, '날짜')
             _open = self.kiwoom.dynamicCall('GetCommData(QString, QString, int, QString)',
@@ -195,4 +182,15 @@ class KiwoomPriceInfo:
             for i, data in enumerate(alldata):
                 self.memories[i].insert(0, data)
 
+            if self.startdate >= (datetime.strptime(_date.strip(), DATEFMT).date()):
+                self.contdatamode = False
+                break
+
+        if prevnext == '2':  # prevnext=='2': 연속 data 존재
+            self.contdatamode = True
+        else:  # prevnext=='0': 연속 data 없음
+            self.contdatamode = False
+
         self.event_loop.exit()
+
+
